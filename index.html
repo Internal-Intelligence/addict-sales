@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AddictSales • The Addictive Sales &amp; Company OS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+    
+    :root {
+      --primary: #10b981;
+    }
+    
+    body { 
+      font-family: 'Inter', system_ui, sans-serif; 
+    }
+    
+    .font-display {
+      font-family: 'Space Grotesk', 'Inter', sans-serif;
+      font-weight: 600;
+    }
+
+    .kanban-card { 
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+    }
+    .kanban-card:hover { 
+      transform: translateY(-3px); 
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+    .kanban-card.dragging {
+      opacity: 0.6;
+      transform: scale(0.98);
+    }
+
+    .metric-value {
+      font-feature-settings: "ss02";
+    }
+
+    .stage-dot {
+      width: 8px;
+      height: 8px;
+    }
+
+    .toast {
+      animation: slideUp 0.3s ease forwards;
+    }
+
+    .deal-value {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pipeline-column {
+      min-height: 420px;
+    }
+
+    .app-card {
+      transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1), 
+                  box-shadow 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    .app-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .nav-active {
+      background-color: #18181b;
+      color: white;
+    }
+
+    .points-pop {
+      animation: pointsPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes pointsPop {
+      0% { transform: scale(0.6) translateY(10px); opacity: 0; }
+      40% { transform: scale(1.15) translateY(-4px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+
+    .streak-flame {
+      animation: flame 1.5s infinite ease-in-out;
+    }
+
+    .lead-row {
+      transition: background-color 0.1s ease;
+    }
+    .lead-row:hover {
+      background-color: #18181b;
+    }
+  </style>
+</head>
+<body class="bg-zinc-950 text-white">
+  <!-- Top Navigation -->
+  <div class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3">
+          <!-- Logo -->
+          <div class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+            <i class="fas fa-bolt text-black"></i>
+          </div>
+          <div>
+            <div class="text-2xl font-semibold tracking-tighter font-display">AddictSales</div>
+            <div class="text-[10px] text-emerald-400 -mt-1 font-medium">STREAK EDITION</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <!-- Streak -->
+          <div class="hidden md:flex items-center gap-2 px-4 py-1.5 bg-zinc-900 rounded-2xl border border-zinc-800">
+            <div class="flex items-center gap-1.5">
+              <i class="fas fa-fire text-orange-400 streak-flame"></i>
+              <div>
+                <span id="streak-count" class="font-semibold text-orange-300">7</span>
+                <span class="text-xs text-zinc-400 ml-0.5">day streak</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- User -->
+          <div class="flex items-center gap-3 pl-3 border-l border-zinc-800">
+            <div class="text-right hidden sm:block">
+              <div class="text-sm font-medium">Jaydan Eaton</div>
+              <div class="text-[10px] text-emerald-400 font-medium">Sales Director • Level 14</div>
+            </div>
+            <div class="w-9 h-9 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center text-black font-bold text-sm ring-2 ring-offset-2 ring-offset-zinc-950 ring-emerald-500/30">
+              JE
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- Welcome Header -->
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between mb-8 gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-4xl font-semibold tracking-tighter">Good morning, Jaydan.</h1>
+          <div class="hidden md:flex px-3 py-1 rounded-2xl text-xs font-medium bg-emerald-500/10 text-emerald-400 items-center gap-1.5">
+            <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+            <span>Live • 23 online</span>
+          </div>
+        </div>
+        <p class="text-zinc-400 mt-1">You're on fire. 3 deals moved forward yesterday.</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <button onclick="showQuestsModal()" 
+                class="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-2xl text-sm font-medium transition-colors">
+          <i class="fas fa-tachometer-alt text-emerald-400"></i>
+          <span>Today's Quests</span>
+        </button>
+        <button onclick="addQuickWin()" 
+                class="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-black font-semibold rounded-2xl text-sm transition-all">
+          <i class="fas fa-plus"></i>
+          <span>Log Quick Win</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Dashboard KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-zinc-900 rounded-3xl p-6 app-card border border-zinc-800">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="text-zinc-400 text-sm font-medium">Total Pipeline</div>
+            <div id="kpi-pipeline" class="text-5xl font-semibold mt-2 tracking-tighter metric-value">$248,750</div>
+          </div>
+          <div class="w-10 h-10 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
+            <i class="fas fa-chart-line text-emerald-400"></i>
+          </div>
+        </div>
+        <div class="text-emerald-400 text-sm flex items-center gap-1 mt-4 font-medium">
+          <i class="fas fa-arrow-up"></i> 
+          <span>+18% this week</span>
+        </div>
+      </div>
+
+      <div class="bg-zinc-900 rounded-3xl p-6 app-card border border-zinc-800">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="text-zinc-400 text-sm font-medium">Deals Closed</div>
+            <div id="kpi-closed" class="text-5xl font-semibold mt-2 tracking-tighter">14</div>
+          </div>
+          <div class="w-10 h-10 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
+            <i class="fas fa-trophy text-emerald-400"></i>
+          </div>
+        </div>
+        <div class="text-emerald-400 text-sm flex items-center gap-1 mt-4 font-medium">
+          <i class="fas fa-arrow-up"></i> 
+          <span>+3 today</span>
+        </div>
+      </div>
+
+      <div class="bg-zinc-900 rounded-3xl p-6 app-card border border-zinc-800 relative overflow-hidden">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="text-zinc-400 text-sm font-medium">Your Points</div>
+            <div id="kpi-points" class="text-5xl font-semibold mt-2 tracking-tighter">1,840</div>
+          </div>
+          <div class="w-10 h-10 bg-amber-400/10 rounded-2xl flex items-center justify-center">
+            <i class="fas fa-star text-amber-400"></i>
+          </div>
+        </div>
+        <div id="points-delta" 
+             class="absolute top-6 right-6 bg-amber-400 text-black text-xs font-bold px-3.5 py-1 rounded-2xl flex items-center gap-1">
+          <i class="fas fa-plus text-xs"></i>
+          <span id="points-delta-text">+250 today</span>
+        </div>
+      </div>
+
+      <div class="bg-zinc-900 rounded-3xl p-6 app-card border border-zinc-800">
+        <div class="text-zinc-400 text-sm font-medium mb-3">Team Leaderboard</div>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center text-[10px] font-bold text-black">JE</div>
+              <span class="font-medium">You</span>
+            </div>
+            <span class="font-semibold text-emerald-400">1,840</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-zinc-700 rounded-xl flex items-center justify-center text-[10px] font-bold">SC</div>
+              <span class="font-medium text-zinc-300">Sarah Chen</span>
+            </div>
+            <span class="font-medium text-zinc-400">1,620</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-zinc-700 rounded-xl flex items-center justify-center text-[10px] font-bold">MT</div>
+              <span class="font-medium text-zinc-300">Marcus Torres</span>
+            </div>
+            <span class="font-medium text-zinc-400">1,415</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts + Pipeline -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Revenue Chart -->
+      <div class="lg:col-span-2 bg-zinc-900 rounded-3xl p-6 border border-zinc-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="font-semibold">Revenue Trend</h2>
+            <div class="text-xs text-zinc-400">Last 30 days • $142k closed</div>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <div class="px-3 py-1 bg-zinc-800 rounded-2xl text-emerald-400 flex items-center gap-1">
+              <i class="fas fa-arrow-trend-up"></i>
+              <span>+31%</span>
+            </div>
+          </div>
+        </div>
+        <canvas id="revenueChart" class="w-full" height="110"></canvas>
+      </div>
+
+      <!-- Pipeline Kanban -->
+      <div class="bg-zinc-900 rounded-3xl p-6 border border-zinc-800">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold">Sales Pipeline</h2>
+          <button onclick="addNewDeal()" 
+                  class="text-xs px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center gap-1 transition-colors">
+            <i class="fas fa-plus text-xs"></i>
+            <span class="font-medium">Deal</span>
+          </button>
+        </div>
+
+        <div class="space-y-4" id="kanban">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Leads -->
+    <div class="mt-8 bg-zinc-900 rounded-3xl p-6 border border-zinc-800">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="font-semibold">Active Leads</h2>
+          <div class="text-xs text-zinc-400">8 open opportunities • 3 need follow-up today</div>
+        </div>
+        <button onclick="addLead()" 
+                class="bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 transition-colors px-5 py-2 rounded-2xl text-sm font-semibold flex items-center gap-2 text-black">
+          <i class="fas fa-user-plus"></i> 
+          <span>Add Lead</span>
+        </button>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-zinc-400 border-b border-zinc-800 text-xs">
+              <th class="text-left py-3 font-medium">Contact</th>
+              <th class="text-left py-3 font-medium">Company</th>
+              <th class="text-left py-3 font-medium">Value</th>
+              <th class="text-left py-3 font-medium">Stage</th>
+              <th class="text-left py-3 font-medium">Last Activity</th>
+              <th class="w-8"></th>
+            </tr>
+          </thead>
+          <tbody id="leadsTable" class="divide-y divide-zinc-800"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bottom Gamification Bar -->
+    <div class="mt-6 flex flex-col md:flex-row items-center gap-4 text-sm">
+      <div class="flex-1 bg-zinc-900 border border-zinc-800 rounded-3xl px-6 py-4 flex items-center gap-4">
+        <div class="text-emerald-400">
+          <i class="fas fa-medal text-xl"></i>
+        </div>
+        <div class="flex-1">
+          <div class="font-medium">Level 14 • Elite Closer</div>
+          <div class="text-xs text-zinc-400">420 / 650 XP to Level 15</div>
+          <div class="h-1.5 bg-zinc-800 rounded mt-1.5 overflow-hidden">
+            <div class="h-1.5 w-[64%] bg-gradient-to-r from-emerald-400 to-teal-400 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <div onclick="claimDailyBonus()" 
+           class="cursor-pointer flex items-center gap-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-6 py-4 rounded-3xl transition-colors">
+        <div>
+          <div class="font-semibold text-amber-300">Daily Bonus</div>
+          <div class="text-xs text-zinc-400">+75 pts available</div>
+        </div>
+        <div class="px-4 py-1 bg-amber-400/10 text-amber-400 rounded-2xl text-xs font-bold">CLAIM</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-[100] space-y-2"></div>
+
+  <script>
+    // Tailwind
+    tailwind.config = { 
+      content: ["*"],
+      theme: { extend: {} }
+    };
+
+    // ==================== STATE ====================
+    let state = {
+      points: 1840,
+      streak: 7,
+      deals: [
+        { id: 1, title: 'Acme Corp', value: 45000, stage: 0, company: 'Acme Corp' },
+        { id: 2, title: 'Beta Inc', value: 18000, stage: 1, company: 'Beta Inc' },
+        { id: 3, title: 'Gamma LLC', value: 72000, stage: 3, company: 'Gamma LLC' },
+        { id: 4, title: 'Delta Systems', value: 34000, stage: 2, company: 'Delta Systems' }
+      ],
+      leads: [
+        { id: 1, name: 'Sarah Chen', company: 'TechFlow', value: 28000, stage: 'Qualified', lastActivity: '2h ago' },
+        { id: 2, name: 'Mike Torres', company: 'GreenWave', value: 65000, stage: 'Proposal', lastActivity: 'Yesterday' },
+        { id: 3, name: 'Priya Patel', company: 'Nexus Labs', value: 41000, stage: 'Qualified', lastActivity: 'Today' }
+      ],
+      closedToday: 3,
+      totalPipeline: 248750,
+      questsCompleted: []
+    };
+
+    const STAGES = ['New', 'Contacted', 'Qualified', 'Proposal', 'Closed-Won'];
+
+    // ==================== PERSISTENCE ====================
+    function saveState() {
+      localStorage.setItem('addictsales_state', JSON.stringify(state));
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem('addictsales_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Merge to keep defaults if new fields added later
+        state = { ...state, ...parsed };
+      }
+    };
+
+    // ==================== HELPERS ====================
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0
+      }).format(amount);
+    }
+
+    function updateKPIs() {
+      // Pipeline
+      const pipelineEl = document.getElementById('kpi-pipeline');
+      const total = state.deals.reduce((sum, d => sum + (d.stage < 4 ? d.value : 0), 0);
+      pipelineEl.textContent = formatCurrency(total);
+      state.totalPipeline = total;
+
+      // Closed count
+      const closedCount = state.deals.filter(d => d.stage === 4).length;
+      document.getElementById('kpi-closed').textContent = closedCount + state.closedToday;
+
+      // Points
+      document.getElementById('kpi-points').textContent = state.points.toLocaleString();
+
+      // Streak
+      document.getElementById('streak-count').textContent = state.streak;
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const colors = {
+        success: 'bg-emerald-500 text-black',
+        points: 'bg-amber-400 text-black',
+        info: 'bg-zinc-700 text-white'
+      };
+
+      toast.className = `toast flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl ${colors[type] || colors.success}`;
+      toast.innerHTML = `
+        <div class="font-medium">${message}</div>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transition = 'all 0.25s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 200);
+      }, 2400);
+    }
+
+    function addPoints(amount, reason = '') {
+      state.points += amount;
+      
+      const pointsEl = document.getElementById('kpi-points');
+      pointsEl.textContent = state.points.toLocaleString();
+      pointsEl.classList.add('points-pop');
+      setTimeout(() => pointsEl.classList.remove('points-pop'), 600);
+
+      // Update delta badge
+      const delta = document.getElementById('points-delta-text');
+      if (delta) {
+        delta.textContent = `+${amount} today`;
+      }
+
+      saveState();
+      updateKPIs();
+      
+      if (reason) {
+        showToast(`+${amount} pts — ${reason}`, 'points');
+      }
+    }
+
+    // ==================== KANBAN ====================
+    function renderKanban() {
+      const container = document.getElementById('kanban');
+      container.innerHTML = '';
+
+      STAGES.forEach((stageName, stageIndex) => {
+        const columnDeals = state.deals.filter(d => d.stage === stageIndex);
+
+        const col = document.createElement('div');
+        col.className = `bg-zinc-800/70 rounded-2xl p-3 pipeline-column`;
+        col.innerHTML = `
+          <div class="flex items-center justify-between mb-3 px-1">
+            <div class="font-semibold text-sm text-emerald-400">${stageName}</div>
+            <div class="text-xs px-2 py-0.5 bg-zinc-900 rounded-xl text-zinc-400">${columnDeals.length}</div>
+          </div>
+          <div class="space-y-2 min-h-[60px]" data-stage="${stageIndex}">
+            <!-- cards injected here -->
+          </div>
+        `;
+
+        const dropZone = col.querySelector('[data-stage]');
+        
+        // Drop zone handlers
+        dropZone.addEventListener('dragover', e => {
+          e.preventDefault();
+          dropZone.classList.add('!bg-zinc-800');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('!bg-zinc-800'));
+        dropZone.addEventListener('drop', e => {
+          e.preventDefault();
+          dropZone.classList.remove('!bg-zinc-800');
+          const dealId = parseInt(e.dataTransfer.getData('text/plain'));
+          moveDealToStage(dealId, stageIndex);
+        });
+
+        // Cards
+        columnDeals.forEach(deal => {
+          const card = document.createElement('div');
+          card.className = `kanban-card bg-zinc-900 border border-zinc-700 hover:border-zinc-600 p-3.5 rounded-2xl cursor-grab active:cursor-grabbing select-none`;
+          card.draggable = true;
+          card.dataset.id = deal.id;
+
+          const pct = Math.round((deal.stage / 4) * 100);
+
+          card.innerHTML = `
+            <div class="flex justify-between items-start gap-2">
+              <div class="font-medium text-sm leading-tight">${deal.title}</div>
+              <button onclick="event.stopImmediatePropagation(); deleteDeal(${deal.id});" 
+                      class="text-zinc-500 hover:text-red-400 transition-colors">
+                <i class="fas fa-times text-xs"></i>
+              </button>
+            </div>
+            
+            <div class="mt-2 flex items-center justify-between">
+              <div class="font-semibold text-emerald-400 text-sm deal-value">${formatCurrency(deal.value)}</div>
+              <div class="text-[10px] text-zinc-500">${pct}%</div>
+            </div>
+
+            <div class="mt-2 h-1 bg-zinc-800 rounded-full overflow-hidden">
+              <div class="h-1 bg-emerald-400 rounded-full" style="width: ${pct}%"></div>
+            </div>
+          `;
+
+          // Drag handlers
+          card.addEventListener('dragstart', e => {
+            card.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', deal.id);
+          });
+          card.addEventListener('dragend', () => card.classList.remove('dragging'));
+
+          // Click to advance (convenience)
+          card.addEventListener('click', (e) => {
+            if (!e.target.closest('button')) {
+              advanceDeal(deal.id);
+            }
+          });
+
+          dropZone.appendChild(card);
+        });
+
+        container.appendChild(col);
+      });
+    }
+
+    function moveDealToStage(dealId, newStage) {
+      const deal = state.deals.find(d => d.id === dealId);
+      if (!deal || deal.stage === newStage) return;
+
+      const oldStage = deal.stage;
+      deal.stage = newStage;
+
+      renderKanban();
+      updateKPIs();
+      saveState();
+
+      if (newStage === 4 && oldStage < 4) {
+        // Closed!
+        const bonus = Math.floor(deal.value / 200); // bigger deals = more points
+        addPoints(500 + bonus, `Deal closed: ${deal.title}`);
+        
+        // Confetti effect
+        triggerConfetti();
+      } else if (newStage > oldStage) {
+        addPoints(35, `Advanced ${deal.title}`);
+      }
+    }
+
+    function advanceDeal(dealId) {
+      const deal = state.deals.find(d => d.id === dealId);
+      if (!deal) return;
+      
+      const old = deal.stage;
+      deal.stage = Math.min(4, deal.stage + 1);
+      
+      renderKanban();
+      updateKPIs();
+      saveState();
+
+      if (deal.stage === 4 && old < 4) {
+        const bonus = Math.floor(deal.value / 200);
+        addPoints(500 + bonus, `Deal closed: ${deal.title}`);
+        triggerConfetti();
+      } else {
+        addPoints(35, `Advanced ${deal.title}`);
+      }
+    }
+
+    function deleteDeal(dealId) {
+      if (!confirm('Remove this deal from pipeline?')) return;
+      state.deals = state.deals.filter(d => d.id !== dealId);
+      renderKanban();
+      updateKPIs();
+      saveState();
+    }
+
+    function addNewDeal() {
+      const title = prompt('Deal / Company name:');
+      if (!title) return;
+
+      const valueStr = prompt('Deal value (USD):', '25000');
+      const value = parseInt(valueStr) || 25000;
+
+      const newDeal = {
+        id: Date.now(),
+        title: title,
+        value: value,
+        stage: 0,
+        company: title
+      };
+
+      state.deals.unshift(newDeal);
+      renderKanban();
+      updateKPIs();
+      saveState();
+      
+      addPoints(15, 'New deal created');
+    }
+
+    // ==================== LEADS ====================
+    function renderLeads() {
+      const tbody = document.getElementById('leadsTable');
+      tbody.innerHTML = '';
+
+      state.leads.forEach(lead => {
+        const row = document.createElement('tr');
+        row.className = `lead-row text-sm`;
+        
+        const stageColor = lead.stage === 'Closed' ? 'bg-emerald-400/10 text-emerald-400' : 
+                           lead.stage === 'Proposal' ? 'bg-amber-400/10 text-amber-400' : 
+                           'bg-zinc-700 text-zinc-300';
+
+        row.innerHTML = `
+          <td class="py-4 pr-4 font-medium">${lead.name}</td>
+          <td class="py-4 pr-4 text-zinc-400">${lead.company}</td>
+          <td class="py-4 pr-4 font-semibold text-emerald-400">${formatCurrency(lead.value)}</td>
+          <td class="py-4 pr-4">
+            <span class="px-3 py-0.5 text-xs font-medium rounded-3xl ${stageColor}">${lead.stage}</span>
+          </td>
+          <td class="py-4 pr-4 text-xs text-zinc-400">${lead.lastActivity}</td>
+          <td class="py-4">
+            <div class="flex gap-1">
+              <button onclick="advanceLead(${lead.id})" class="px-2 py-1 text-xs hover:bg-emerald-500/10 text-emerald-400 rounded-xl">
+                <i class="fas fa-arrow-right"></i>
+              </button>
+              <button onclick="removeLead(${lead.id})" class="px-2 py-1 text-xs text-zinc-500 hover:text-red-400 rounded-xl">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function advanceLead(leadId) {
+      const lead = state.leads.find(l => l.id === leadId);
+      if (!lead) return;
+
+      const stages = ['New', 'Contacted', 'Qualified', 'Proposal', 'Closed'];
+      const idx = stages.indexOf(lead.stage);
+      if (idx === -1 || idx === 4) return;
+
+      lead.stage = stages[idx + 1];
+      lead.lastActivity = 'Just now';
+
+      // If closed, convert to deal + points
+      if (lead.stage === 'Closed') {
+        // Turn into a deal in Closed-Won
+        state.deals.push({
+          id: Date.now(),
+          title: lead.company,
+          value: lead.value,
+          stage: 4,
+          company: lead.company
+        });
+        
+        addPoints(380, `Converted ${lead.name}`);
+        triggerConfetti();
+      } else {
+        addPoints(20, `Updated ${lead.name}`);
+      }
+
+      renderLeads();
+      renderKanban();
+      updateKPIs();
+      saveState();
+    }
+
+    function removeLead(leadId) {
+      state.leads = state.leads.filter(l => l.id !== leadId);
+      renderLeads();
+      saveState();
+    }
+
+    function addLead() {
+      const name = prompt('Contact name:');
+      if (!name) return;
+
+      const company = prompt('Company:', 'New Company') || 'New Company';
+      const valueStr = prompt('Expected value:', '22000');
+      const value = parseInt(valueStr) || 22000;
+
+      state.leads.unshift({
+        id: Date.now(),
+        name,
+        company,
+        value,
+        stage: 'New',
+        lastActivity: 'Just now'
+      });
+
+      renderLeads();
+      addPoints(10, 'New lead added');
+      saveState();
+    }
+
+    // ==================== CHART ====================
+    let revenueChart;
+
+    function initRevenueChart() {
+      const ctx = document.getElementById('revenueChart');
+      
+      if (revenueChart) revenueChart.destroy();
+
+      revenueChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['May 1', 'May 5', 'May 10', 'May 15', 'May 20', 'May 23', 'May 28'],
+          datasets: [{
+            label: 'Revenue',
+            data: [42000, 68000, 55000, 92000, 118000, 142000, 168500],
+            borderColor: '#10b981',
+            borderWidth: 3,
+            tension: 0.38,
+            fill: true,
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            pointBackgroundColor: '#10b981',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#27272a', tickLength: 0 }, borderColor: '#27272a' },
+            y: { 
+              grid: { color: '#27272a' }, 
+              borderColor: '#27272a',
+              ticks: { 
+                callback: v => '$' + (v / 1000) + 'k',
+                color: '#52525b',
+                font: { size: 11 }
+              } 
+            }
+          },
+          elements: {
+            line: { borderJoinStyle: 'round' },
+            point: { hitRadius: 12 }
+          }
+        }
+      });
+    }
+
+    // ==================== CONFETTI ====================
+    function triggerConfetti() {
+      const colors = ['#10b981', '#34d399', '#fbbf24'];
+      const container = document.body;
+      
+      for (let i = 0; i < 42; i++) {
+        const particle = document.createElement('div');
+        particle.style.position = 'fixed';
+        particle.style.zIndex = '200';
+        particle.style.left = Math.random() * 100 + 'vw';
+        particle.style.top = '-10px';
+        particle.style.width = '8px';
+        particle.style.height = '8px';
+        particle.style.borderRadius = Math.random() > 0.6 ? '2px' : '50%';
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.pointerEvents = 'none';
+        container.appendChild(particle);
+
+        const duration = 900 + Math.random() * 1100;
+        const xDrift = (Math.random() - 0.5) * 180;
+
+        particle.animate([
+          { transform: `translate(0, 0)`, opacity: 1 },
+          { transform: `translate(${xDrift}px, ${window.innerHeight + 40}px)`, opacity: 0 }
+        ], {
+          duration: duration,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+        }).onfinish = () => particle.remove();
+      }
+    }
+
+    // ==================== QUESTS & GAMIFICATION ====================
+    function showQuestsModal() {
+      const modal = document.createElement('div');
+      modal.className = `fixed inset-0 bg-black/70 backdrop-blur flex items-center justify-center z-[200]`;
+      
+      const completed = state.questsCompleted || [];
+      
+      modal.innerHTML = `
+        <div onclick="event.target.remove()" class="absolute inset-0"></div>
+        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-3xl p-6 relative">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <div class="font-semibold text-xl">Today's Quests</div>
+              <div class="text-xs text-emerald-400">+320 pts available</div>
+            </div>
+            <button onclick="this.closest('.fixed').remove()" class="text-zinc-400 hover:text-white">✕</button>
+          </div>
+
+          <div class="space-y-2">
+            ${createQuestRow('Log 3 activities', 60, completed.includes('activities'), 'activities')}
+            ${createQuestRow('Move 2 deals forward', 80, completed.includes('pipeline'), 'pipeline')}
+            ${createQuestRow('Add a new lead', 45, completed.includes('newlead'), 'newlead')}
+            ${createQuestRow('Close at least 1 deal', 135, completed.includes('close'), 'close')}
+          </div>
+
+          <div class="mt-6 text-xs text-center text-zinc-400">
+            Complete all quests for a <span class="text-emerald-400 font-medium">+200 bonus</span>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+    }
+
+    function createQuestRow(label, points, done, key) {
+      return `
+        <div onclick="completeQuest('${key}', this)" class="flex items-center justify-between bg-zinc-800/60 hover:bg-zinc-800 cursor-pointer border border-zinc-700 px-4 py-3 rounded-2xl ${done ? 'opacity-60' : ''}">
+          <div class="flex items-center gap-3">
+            <i class="fas ${done ? 'fa-check-circle text-emerald-400' : 'fa-circle text-zinc-600'}"></i>
+            <div>${label}</div>
+          </div>
+          <div class="font-mono text-sm ${done ? 'text-emerald-400 line-through' : 'text-amber-400'}">+${points}</div>
+        </div>
+      `;
+    }
+
+    window.completeQuest = function(key, el) {
+      if (!state.questsCompleted) state.questsCompleted = [];
+      if (state.questsCompleted.includes(key)) return;
+
+      state.questsCompleted.push(key);
+      
+      let pts = 60;
+      if (key === 'pipeline') pts = 80;
+      if (key === 'newlead') pts = 45;
+      if (key === 'close') pts = 135;
+
+      addPoints(pts, 'Quest complete');
+      
+      // If all quests done, give bonus
+      if (state.questsCompleted.length >= 4) {
+        setTimeout(() => {
+          addPoints(200, 'All quests complete — Bonus!');
+          triggerConfetti();
+        }, 650);
+      }
+
+      saveState();
+      el.style.transition = 'all 0.2s';
+      el.style.opacity = '0.5';
+      el.querySelector('i').classList.replace('fa-circle', 'fa-check-circle');
+      el.querySelector('i').classList.add('text-emerald-400');
+    }
+
+    function claimDailyBonus() {
+      const today = new Date().toISOString().split('T')[0];
+      const claimed = localStorage.getItem('daily_bonus_claimed');
+      
+      if (claimed === today) {
+        showToast("You've already claimed today's bonus", 'info');
+        return;
+      }
+
+      addPoints(75, 'Daily login bonus');
+      localStorage.setItem('daily_bonus_claimed', today);
+      
+      showToast('Daily bonus claimed! 🔥', 'points');
+    }
+
+    function addQuickWin() {
+      const amount = parseInt(prompt('Quick win value (points or revenue impact):', '150')) || 150;
+      
+      addPoints(Math.floor(amount / 3) + 40, 'Quick win logged');
+      
+      // Occasionally boost streak feel
+      if (Math.random() > 0.7) {
+        state.streak = Math.min(42, state.streak + 1);
+        document.getElementById('streak-count').textContent = state.streak;
+        showToast('Streak extended!', 'success');
+      }
+      
+      saveState();
+    }
+
+    // ==================== INIT ====================
+    function init() {
+      loadState();
+
+      // Render everything
+      renderKanban();
+      renderLeads();
+      updateKPIs();
+      initRevenueChart();
+
+      // Random nice touch: occasionally show that user is "hot"
+      setTimeout(() => {
+        const kpi = document.getElementById('kpi-points');
+        if (kpi && Math.random() > 0.65) {
+          kpi.title = 'You are in the top 8% of performers today';
+        }
+      }, 1800);
+
+      // Keyboard shortcut hint
+      document.addEventListener('keydown', function(e) {
+        if (e.key === '?' && document.activeElement.tagName === 'BODY') {
+          e.preventDefault();
+          showQuestsModal();
+        }
+      });
+
+      // First time message
+      if (!localStorage.getItem('addictsales_state')) {
+        setTimeout(() => {
+          showToast('Welcome! Click cards to advance deals. Drag them too.', 'info');
+        }, 2100);
+      }
+
+      // Expose some debug for power users (optional)
+      window.AddictSales = { state, addPoints, reset: () => { localStorage.clear(); location.reload(); } };
+    }
+
+    // Boot the app
+    init();
+  </script>
+</body>
+</html>
